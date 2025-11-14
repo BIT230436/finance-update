@@ -1,0 +1,72 @@
+package com.example.financeapp.repository;
+
+import com.example.financeapp.entity.WalletTransfer;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+@Repository
+public interface WalletTransferRepository extends JpaRepository<WalletTransfer, Long> {
+
+    /**
+     * Lấy tất cả transfers của user (theo thời gian giảm dần)
+     */
+    List<WalletTransfer> findByUser_UserIdOrderByTransferDateDesc(Long userId);
+
+    /**
+     * Lấy transfers của một ví cụ thể (cả gửi và nhận)
+     */
+    @Query("SELECT t FROM WalletTransfer t " +
+           "WHERE t.fromWallet.walletId = :walletId OR t.toWallet.walletId = :walletId " +
+           "ORDER BY t.transferDate DESC")
+    List<WalletTransfer> findByWalletId(@Param("walletId") Long walletId);
+
+    /**
+     * Lấy transfers từ một ví cụ thể (chỉ gửi đi)
+     */
+    List<WalletTransfer> findByFromWallet_WalletIdOrderByTransferDateDesc(Long walletId);
+
+    /**
+     * Lấy transfers đến một ví cụ thể (chỉ nhận vào)
+     */
+    List<WalletTransfer> findByToWallet_WalletIdOrderByTransferDateDesc(Long walletId);
+
+    /**
+     * Lấy transfers trong khoảng thời gian
+     */
+    @Query("SELECT t FROM WalletTransfer t " +
+           "WHERE t.user.userId = :userId " +
+           "AND t.transferDate BETWEEN :startDate AND :endDate " +
+           "ORDER BY t.transferDate DESC")
+    List<WalletTransfer> findByUserAndDateRange(
+        @Param("userId") Long userId,
+        @Param("startDate") LocalDateTime startDate,
+        @Param("endDate") LocalDateTime endDate
+    );
+
+    /**
+     * Đếm số lần transfer giữa 2 ví
+     */
+    @Query("SELECT COUNT(t) FROM WalletTransfer t " +
+           "WHERE (t.fromWallet.walletId = :wallet1Id AND t.toWallet.walletId = :wallet2Id) " +
+           "OR (t.fromWallet.walletId = :wallet2Id AND t.toWallet.walletId = :wallet1Id)")
+    long countTransfersBetweenWallets(
+        @Param("wallet1Id") Long wallet1Id,
+        @Param("wallet2Id") Long wallet2Id
+    );
+
+    /**
+     * Xóa tất cả transfers liên quan đến một ví (khi xóa ví)
+     */
+    void deleteByFromWallet_WalletIdOrToWallet_WalletId(Long fromWalletId, Long toWalletId);
+
+    /**
+     * Đếm số transfers của user
+     */
+    long countByUser_UserId(Long userId);
+}
+
