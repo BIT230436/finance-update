@@ -68,6 +68,16 @@ public class WebSecurityConfig {
                                 "/wallets/**"
                         ).authenticated()
 
+                        // ✅ Budget APIs (yêu cầu đăng nhập)
+                        .requestMatchers(
+                                "/budgets/**"
+                        ).authenticated()
+
+                        // ✅ Transaction APIs (yêu cầu đăng nhập)
+                        .requestMatchers(
+                                "/transactions/**"
+                        ).authenticated()
+
                         // (Tuỳ chọn) Cho phép GET "/" nếu bạn muốn test nhanh
                         .requestMatchers(HttpMethod.GET, "/").permitAll()
 

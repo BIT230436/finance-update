@@ -3,6 +3,7 @@ package com.example.financeapp.service.impl;
 import com.example.financeapp.dto.CreateTransactionRequest;
 import com.example.financeapp.entity.*;
 import com.example.financeapp.repository.*;
+import com.example.financeapp.service.BudgetService;
 import com.example.financeapp.service.TransactionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -19,6 +20,7 @@ public class TransactionServiceImpl implements TransactionService {
     @Autowired private TransactionTypeRepository typeRepository;
     @Autowired private CategoryRepository categoryRepository;
     @Autowired private WalletMemberRepository walletMemberRepository;
+    @Autowired private BudgetService budgetService;
 
     private Transaction createTransaction(Long userId, CreateTransactionRequest req, String typeName) {
         // 1. Kiểm tra user tồn tại
@@ -89,7 +91,23 @@ public class TransactionServiceImpl implements TransactionService {
         tx.setNote(req.getNote());
         tx.setImageUrl(req.getImageUrl());
 
-        return transactionRepository.save(tx);
+        Transaction savedTx = transactionRepository.save(tx);
+
+        // 10. ✅ Cập nhật budget nếu là Chi tiêu
+        if ("Chi tiêu".equals(typeName)) {
+            try {
+                budgetService.updateSpentAmountsForTransaction(
+                    wallet.getWalletId(),
+                    category.getCategoryId(),
+                    req.getTransactionDate().toLocalDate()
+                );
+            } catch (Exception e) {
+                // Log error nhưng không fail transaction
+                System.err.println("Lỗi khi cập nhật budget: " + e.getMessage());
+            }
+        }
+
+        return savedTx;
     }
 
     @Override
